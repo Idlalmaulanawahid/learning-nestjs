@@ -4,9 +4,12 @@ import { EntityRepository, Repository } from 'typeorm';
 import { TaskStatus } from './task-status.enum';
 import { GetTasksFilterDto } from './dto/get-task-filter.dto';
 import { User } from 'src/auth/user.entity';
+import { Logger, InternalServerErrorException } from '@nestjs/common';
 
 @EntityRepository(Task)
 export class TaskRepository extends Repository<Task> {
+    private logger = new Logger('TaskRepository')
+
     async getTasks(
         filterDto: GetTasksFilterDto,
         user: User
@@ -25,9 +28,13 @@ export class TaskRepository extends Repository<Task> {
         }
 
 
-
-        const tasks = await query.getMany()
-        return tasks
+        try {
+            const tasks = await query.getMany()
+            return tasks
+        } catch (error) {
+            this.logger.error(`Failed to get task for user "${user.username}". Filter: ${JSON.stringify(filterDto)}`)
+            throw new InternalServerErrorException
+        }
     }
 
 
@@ -43,7 +50,13 @@ export class TaskRepository extends Repository<Task> {
         task.description = description;
         task.status = TaskStatus.OPEN;
         task.user = user
-        await task.save();
+
+        try {
+            await task.save();
+        } catch (error) {
+            this.logger.error(`Failed to cretae  user "${user.username}". Data: ${JSON.stringify(createTaskDto)}`, error.stack)
+            throw new InternalServerErrorException
+        }
         delete task.user;
 
         return task;

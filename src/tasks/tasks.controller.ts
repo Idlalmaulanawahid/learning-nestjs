@@ -1,6 +1,6 @@
 import { CreateTaskDto } from './dto/create-task-dto';
 import { TasksService } from './tasks.service';
-import { Controller, Get, Post, Body, Param, Delete, Patch, Query, ValidationPipe, UsePipes, ParseIntPipe, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, Patch, Query, ValidationPipe, UsePipes, ParseIntPipe, UseGuards, Logger } from '@nestjs/common';
 import { GetTasksFilterDto } from './dto/get-task-filter.dto';
 import { TaskStatusValidationPipe } from './pipes/task-status-validation.pipes';
 import { Task } from './task.entity';
@@ -13,6 +13,7 @@ import { User } from 'src/auth/user.entity';
 @Controller('tasks')
 @UseGuards(AuthGuard())
 export class TasksController {
+    private logger = new Logger('TaskController')
     constructor(
         private tasksService: TasksService
     ) { }
@@ -22,6 +23,7 @@ export class TasksController {
         @Query(ValidationPipe) filterDto: GetTasksFilterDto,
         @GetUser() user: User,
     ): Promise<Task[]> {
+        this.logger.verbose(`User "${user.username}" retrieving all task. filter: ${JSON.stringify(filterDto)}`)
         return this.tasksService.getTasks(filterDto, user)
     }
 
@@ -40,6 +42,7 @@ export class TasksController {
         @Body() createTaskDto: CreateTaskDto,
         @GetUser() user: User
     ): Promise<Task> {
+        this.logger.verbose(`User "${user.username}" Creating a new task. Data: ${JSON.stringify(createTaskDto)}`)
         return this.tasksService.createTask(createTaskDto, user)
     }
 
